@@ -71,7 +71,7 @@
         ["proxy", proxyTransferHandler],
         ["throw", throwTransferHandler],
     ]);
-    function expose(obj, ep = self) {
+    function expose(obj, ep = window) {
         ep.addEventListener("message", function callback(ev) {
             if (!ev || !ev.data) {
                 return;

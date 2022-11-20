@@ -182,9 +182,78 @@ fn exec_module(
 
     let instance = Instance::new(store, &module, &import_object)
         .map_err(|e| format!("instance: {e}"))?;
-    let memory = instance.exports.get_memory("memory")
+    let memory = instance.exports.get_memory("X")
         .map_err(|e| format!("memory: {e}"))?;
+    
+    /*
+        var env = {
+            "USER": "web_user",
+            "LOGNAME": "web_user",
+            "PATH": "/",
+            "PWD": "/",
+            "HOME": "/home/web_user",
+            "LANG": lang,
+            "_": getExecutableName()
+        };
+    */
+
+    // init_emval()
+    // createWasm()
     wasi_env.data_mut(store).set_memory(memory.clone());
+
+    /*
+        Module["___wasm_call_ctors"] = function() {
+            return (Module["___wasm_call_ctors"] = Module["asm"]["X"]).apply(null, arguments)
+        };
+        var _malloc = Module["_malloc"] = function() {
+            return (_malloc = Module["_malloc"] = Module["asm"]["Y"]).apply(null, arguments)
+        };
+        var _free = Module["_free"] = function() {
+            return (_free = Module["_free"] = Module["asm"]["_"]).apply(null, arguments)
+        };
+        var ___getTypeName = Module["___getTypeName"] = function() {
+            return (___getTypeName = Module["___getTypeName"] = Module["asm"]["$"]).apply(null, arguments)
+        };
+        Module["___embind_register_native_and_builtin_types"] = function() {
+            return (Module["___embind_register_native_and_builtin_types"] = Module["asm"]["aa"]).apply(null, arguments)
+        };
+        var ___cxa_is_pointer_type = Module["___cxa_is_pointer_type"] = function() {
+            return (___cxa_is_pointer_type = Module["___cxa_is_pointer_type"] = Module["asm"]["ba"]).apply(null, arguments)
+        };
+        Module["dynCall_jiji"] = function() {
+            return (Module["dynCall_jiji"] = Module["asm"]["ca"]).apply(null, arguments)
+        };
+        Module["dynCall_viijii"] = function() {
+            return (Module["dynCall_viijii"] = Module["asm"]["da"]).apply(null, arguments)
+        };
+        Module["dynCall_iiiiij"] = function() {
+            return (Module["dynCall_iiiiij"] = Module["asm"]["ea"]).apply(null, arguments)
+        };
+        Module["dynCall_iiiiijj"] = function() {
+            return (Module["dynCall_iiiiijj"] = Module["asm"]["fa"]).apply(null, arguments)
+        };
+        Module["dynCall_iiiiiijj"] = function() {
+            return (Module["dynCall_iiiiiijj"] = Module["asm"]["ga"]).apply(null, arguments)
+        };
+        Module["dynCall_jijii"] = function() {
+            return (Module["dynCall_jijii"] = Module["asm"]["ha"]).apply(null, arguments)
+        };
+        Module["dynCall_vijii"] = function() {
+            return (Module["dynCall_vijii"] = Module["asm"]["ia"]).apply(null, arguments)
+        };
+        Module["dynCall_jij"] = function() {
+            return (Module["dynCall_jij"] = Module["asm"]["ja"]).apply(null, arguments)
+        };
+        Module["dynCall_iij"] = function() {
+            return (Module["dynCall_iij"] = Module["asm"]["ka"]).apply(null, arguments)
+        };
+        Module["dynCall_viji"] = function() {
+            return (Module["dynCall_viji"] = Module["asm"]["la"]).apply(null, arguments)
+        };
+        Module["dynCall_jii"] = function() {
+            return (Module["dynCall_jii"] = Module["asm"]["ma"]).apply(null, arguments)
+        };
+    */
 
     // If this module exports an _initialize function, run that first.
     if let Ok(initialize) = instance.exports.get_function("_initialize") {
@@ -257,12 +326,11 @@ fn tesseract_exports(mut store: &mut impl AsStoreMut, env: &FunctionEnv<WasiEnv>
     };
     */
     let namespace = namespace! {
-        "a" => Function::new_typed_with_env(&mut store, env, ___cxa_throw::<Memory32>),
-        
+        "a" => Function::new_typed_with_env(&mut store, env, __embind_register_class_function::<Memory32>),        
         "b" => Function::new_typed_with_env(&mut store, env, __embind_register_memory_view::<Memory32>),
         "c" => Function::new_typed_with_env(&mut store, env, __embind_register_value_object_field::<Memory32>),
         "d" => Function::new_typed_with_env(&mut store, env, __embind_register_integer::<Memory32>),
-        "e" => Function::new_typed_with_env(&mut store, env, __embind_register_class_function::<Memory32>),
+        "e" => Function::new_typed_with_env(&mut store, env, ___cxa_throw::<Memory32>),
         "f" => Function::new_typed_with_env(&mut store, env, ___cxa_allocate_exception::<Memory32>),
         "g" => Function::new_typed_with_env(&mut store, env, __embind_finalize_value_object::<Memory32>),
         "h" => Function::new_typed_with_env(&mut store, env, _abort::<Memory32>),
@@ -284,7 +352,6 @@ fn tesseract_exports(mut store: &mut impl AsStoreMut, env: &FunctionEnv<WasiEnv>
         "x" => Function::new_typed_with_env(&mut store, env, _fd_seek::<Memory32>),
         "y" => Function::new_typed_with_env(&mut store, env, __embind_register_bigint::<Memory32>),
         "z" => Function::new_typed_with_env(&mut store, env, _strftime_::<Memory32>),
-
         "A" => Function::new_typed_with_env(&mut store, env, _emscripten_resize_heap::<Memory32>),
         "B" => Function::new_typed_with_env(&mut store, env, ___syscall_rmdir::<Memory32>),
         "C" => Function::new_typed_with_env(&mut store, env, ___syscall_unlinkat::<Memory32>),
@@ -306,6 +373,7 @@ fn tesseract_exports(mut store: &mut impl AsStoreMut, env: &FunctionEnv<WasiEnv>
         "S" => Function::new_typed_with_env(&mut store, env, __embind_register_void::<Memory32>),
         "T" => Function::new_typed_with_env(&mut store, env, _strftime::<Memory32>),
         "U" => Function::new_typed_with_env(&mut store, env, __emval_decref::<Memory32>),
+
         "V" => Function::new_typed_with_env(&mut store, env, __emval_call::<Memory32>),
         
         // special _memory function: allocates memory
@@ -314,347 +382,524 @@ fn tesseract_exports(mut store: &mut impl AsStoreMut, env: &FunctionEnv<WasiEnv>
     namespace
 }
 
-pub fn _memory<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn ___cxa_allocate_exception<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn ___cxa_throw<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn ___syscall_fcntl64<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn ___syscall_getcwd<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn ___syscall_ioctl<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn ___syscall_openat<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn ___syscall_rmdir<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn ___syscall_unlinkat<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __embind_finalize_value_object<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __embind_register_bigint<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __embind_register_bool<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __embind_register_class<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __embind_register_class_constructor<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
+// ----------
+// 
+// "a"."a": [] -> [I32]
 pub fn __embind_register_class_function<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+) -> i32 {
+    panic!("a.a: __embind_register_class_function")
 }
 
-pub fn __embind_register_emval<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __embind_register_enum<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __embind_register_enum_value<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __embind_register_float<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __embind_register_integer<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
+// ----------
+// 
+//     "a"."b": [I32] -> []
 pub fn __embind_register_memory_view<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv: WasmPtr<u8, M>,
+) {
+    panic!("a.b: __embind_register_memory_view")
 }
 
-pub fn __embind_register_std_string<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __embind_register_std_wstring<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __embind_register_value_object<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
+// ----------
+// 
+// "c": [I32, I32, I32, I32] -> []
 pub fn __embind_register_value_object_field<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _arg1: WasmPtr<u8, M>,
+    _arg2: WasmPtr<u8, M>,
+    _arg3: WasmPtr<u8, M>,
+    _arg4: WasmPtr<u8, M>,
+) {
+    panic!("a.c: __embind_register_value_object_field");
 }
 
-pub fn __embind_register_void<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
+// ----------
+// 
+// [I32, I32, I32, I32] -> [I32]
+pub fn __embind_register_integer<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _arg1: WasmPtr<u8, M>,
+    _arg2: WasmPtr<u8, M>,
+    _arg3: WasmPtr<u8, M>,
+    _arg4: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.d: __embind_register_integer")
 }
 
-pub fn __emscripten_date_now<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
+// ----------
+// 
+// [I32, I32] -> [I32]
+pub fn ___cxa_throw<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _arg1: WasmPtr<u8, M>,
+    _arg2: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.e: ___cxa_throw")
 }
 
-pub fn __emscripten_get_now_is_monotonic<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
+// ----------
+//
+// [I32, I32, I32] -> []
+pub fn ___cxa_allocate_exception<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _arg1: WasmPtr<u8, M>,
+    _arg2: WasmPtr<u8, M>,
+    _arg3: WasmPtr<u8, M>,
+) {
+    panic!("a.f: ___cxa_allocate_exception")
 }
 
-pub fn __emval_call<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
+// ----------
+//
+// [I32, I32] -> []
+pub fn __embind_finalize_value_object<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _arg1: WasmPtr<u8, M>,
+    _arg2: WasmPtr<u8, M>,
+) {
+    panic!("a.g: __embind_finalize_value_object")
 }
 
-pub fn __emval_decref<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __emval_incref<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __emval_take_value<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __gmtime_js<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __localtime_js<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __mktime_js<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn __tzset_js<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
+// ----------
+//
+// [I32, I32, I32] -> [I32]
 pub fn _abort<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _arg1: WasmPtr<u8, M>,
+    _arg2: WasmPtr<u8, M>,
+    _arg3: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.h: _abort")
 }
 
-pub fn _emscripten_get_now<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
+// ------
+//
+// [I32, I32, I32, I32] -> []
+pub fn __embind_register_value_object<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _arg1: WasmPtr<u8, M>,
+    _arg2: WasmPtr<u8, M>,
+    _arg3: WasmPtr<u8, M>,
+    _arg4: WasmPtr<u8, M>,
+) {
+    panic!("a.i: __embind_register_value_object")
 }
 
-pub fn _emscripten_memcpy_big<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn _emscripten_resize_heap<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn _environ_get<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn _environ_sizes_get<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn _fd_close<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn _fd_read<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn _fd_seek<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
-pub fn _fd_write<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
-}
-
+// -----
+// 
+// [I32, I32, I32, I32, I32] -> [I32]
 pub fn _setTempRet0<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _arg1: WasmPtr<u8, M>,
+    _arg2: WasmPtr<u8, M>,
+    _arg3: WasmPtr<u8, M>,
+    _arg4: WasmPtr<u8, M>,
+    _argv5: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.j: _setTempRet0")
 }
 
-pub fn _strftime<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
-) -> Errno {
-    Errno::Access    
+// -----
+// 
+// [I32, I32, I32] -> []
+pub fn __emscripten_date_now<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _arg1: WasmPtr<u8, M>,
+    _arg2: WasmPtr<u8, M>,
+    _arg3: WasmPtr<u8, M>,
+) {
+    panic!("a.k: _setTempRet0")
 }
 
+// -----
+//
+// [I32] -> [I32]
+pub fn __embind_register_class_constructor<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _arg1: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.l: __embind_register_class_constructor")
+}
+
+// ------
+// 
+// [I32, I32, I32, I32, I32, I32] -> [I32]
+pub fn __embind_register_class<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _arg1: WasmPtr<u8, M>,
+    _arg2: WasmPtr<u8, M>,
+    _arg3: WasmPtr<u8, M>,
+    _arg4: WasmPtr<u8, M>,
+    _arg5: WasmPtr<u8, M>,
+    _arg6: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.m: __embind_register_class")
+}
+
+// -----
+// 
+// [I32, I32, I32, I32, I32] -> []
+pub fn __emval_take_value<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+    _argv4: WasmPtr<u8, M>,
+    _argv5: WasmPtr<u8, M>,
+) {
+    panic!("a.n: __emval_take_value")
+}
+
+// -----
+//
+// [I32] -> []
+pub fn _fd_close<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv: WasmPtr<u8, M>,
+) {
+    panic!("a.o: _fd_close")
+}
+
+// [] -> []
+pub fn __embind_register_std_wstring<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+) {
+    panic!("a.p: __embind_register_std_wstring") 
+}
+
+// [] -> [F64]
+pub fn __emval_incref<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+) -> f64 {
+    panic!("a.q: __emval_incref")
+}
+
+// [I32, I32, I32, I32] -> [I32]
+pub fn _fd_write<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+    _argv4: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.r: _fd_write")
+}
+
+// ------
+//
+// [I32] -> [I32]
+pub fn ___syscall_fcntl64<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.s: ___syscall_fcntl64")
+}
+
+// [I32, I32, I32] -> [I32]
+pub fn ___syscall_openat<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.t: ___syscall_openat")
+}
+
+// [I32, I32, I32, I32] -> [I32]
+pub fn __embind_register_std_string<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+    _argv4: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.u: __embind_register_std_string")
+}
+
+// [I32, I32, I32, I32] -> [I32]
+pub fn __embind_register_float<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+    _argv4: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.v: __embind_register_float")
+}
+
+// [I32, I32, I32] -> [I32]
+pub fn __embind_register_enum_value<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.w: __embind_register_enum_value")
+}
+
+// [I32, I32, I32, I32, I32, I32] -> []
+pub fn _fd_seek<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+    _argv4: WasmPtr<u8, M>,
+    _argv5: WasmPtr<u8, M>,
+    _argv6: WasmPtr<u8, M>,
+) {
+    panic!("a.x: _fd_seek")
+}
+
+// [I32, I32, I32, I32, I32, I32, I32, I32, I32, I32] -> []
+pub fn __embind_register_bigint<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+    _argv4: WasmPtr<u8, M>,
+    _argv5: WasmPtr<u8, M>,
+    _argv6: WasmPtr<u8, M>,
+    _argv7: WasmPtr<u8, M>,
+    _argv8: WasmPtr<u8, M>,
+    _argv9: WasmPtr<u8, M>,
+    _argv10: WasmPtr<u8, M>,
+) {
+    panic!("a.y: __embind_register_bigint")
+}
+
+// [I32, I32, I32, I32, I32] -> [I32]
 pub fn _strftime_<M: MemorySize>(
-    mut ctx: FunctionEnvMut<'_, WasiEnv>,
-    // argv: WasmPtr<u8, M>,
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+    _argv4: WasmPtr<u8, M>,
+    _argv5: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.z: _strftime_")
+}
+
+// [I32, I32, I32, I32, I32] -> [I32]
+pub fn _emscripten_resize_heap<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+    _argv4: WasmPtr<u8, M>,
+    _argv5: WasmPtr<u8, M>,
 ) -> Errno {
-    Errno::Access    
+    panic!("a.A: _emscripten_resize_heap")
+}
+
+// [] -> []
+pub fn ___syscall_rmdir<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+) {
+    panic!("a.B: ___syscall_rmdir")
+}
+
+// [I32] -> [I32]
+pub fn ___syscall_unlinkat<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.C: ___syscall_unlinkat")
+}
+
+// [I32] -> [I32]
+pub fn _environ_get<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.D: _environ_get")
+}
+
+// [I32, I32, I32] -> [I32]
+pub fn __embind_register_enum<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.E: __embind_register_enum")
+}
+
+// [I32, I32, I32, I32, I32, I32] -> [I32]
+pub fn _environ_sizes_get<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+    _argv4: WasmPtr<u8, M>,
+    _argv5: WasmPtr<u8, M>,
+    _argv6: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.F: _environ_sizes_get")
+}
+
+// [I32, I32, I32, I32, I32, I32] -> [I32]
+pub fn ___syscall_getcwd<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+    _argv4: WasmPtr<u8, M>,
+    _argv5: WasmPtr<u8, M>,
+    _argv6: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.G: ___syscall_getcwd")
+}
+
+// [I32, I32] -> [I32]
+pub fn _fd_read<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.H: _fd_read")
+}
+
+// [I32, I32] -> [I32]
+pub fn ___syscall_ioctl<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.I: ___syscall_ioctl")
+}
+
+// [I32, I32] -> [I32]
+pub fn _emscripten_get_now<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.J: _emscripten_get_now")
+}
+
+// [I32, I32, I32, I32] -> [I32]
+pub fn __emscripten_get_now_is_monotonic<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+    _argv4: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.K: __emscripten_get_now_is_monotonic")
+}
+
+// [I32, I32] -> [I32]
+pub fn __gmtime_js<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.L: __gmtime_js")
+}
+
+// [I32, I32] -> [I32]
+pub fn __localtime_js<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.M: __localtime_js")
+}
+
+// [] -> [F64]
+pub fn __mktime_js<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+) -> f64 {
+    panic!("a.N: __mktime_js")
+}
+
+// [] -> [F64]
+pub fn __tzset_js<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+) -> i32 {
+    panic!("a.O: __tzset_js")
+}
+
+// [I32, I32] -> []
+pub fn _emscripten_memcpy_big<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+) {
+    panic!("a.P: _emscripten_memcpy_big")
+}
+
+// [I32, I32] -> []
+pub fn __embind_register_emval<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+) {
+    panic!("a.Q: __embind_register_emval")
+}
+
+// [I32] -> [I32]
+pub fn __embind_register_bool<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.R: __embind_register_bool")
+}
+
+// ------
+// 
+// [I32, I32, I32] -> []
+pub fn __embind_register_void<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+) {
+    panic!("a.S: __embind_register_void")
+}
+
+// ------
+// 
+// [I32, I32, I32] -> []
+pub fn _strftime<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+) {
+    panic!("a.T: _strftime")
+}
+
+// ------
+// 
+// [I32, I32, I32] -> [I32]
+pub fn __emval_decref<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.U: __emval_decref")
+}
+
+// [I32] -> []
+pub fn __emval_call<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv: WasmPtr<u8, M>,
+) {
+    panic!("a.V: __emval_call")
+}
+
+// [I32, I32, I32, I32] -> [I32]
+pub fn _memory<M: MemorySize>(
+    mut _ctx: FunctionEnvMut<'_, WasiEnv>,
+    _argv1: WasmPtr<u8, M>,
+    _argv2: WasmPtr<u8, M>,
+    _argv3: WasmPtr<u8, M>,
+    _argv4: WasmPtr<u8, M>,
+) -> i32 {
+    panic!("a.W: _memory")
 }
 
 fn main() {
